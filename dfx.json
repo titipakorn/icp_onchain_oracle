@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "onchain_oracle_backend": {
+      "candid": "src/onchain_oracle_backend/onchain_oracle_backend.did",
+      "package": "onchain_oracle_backend",
+      "type": "rust"
+    },
+    "onchain_oracle_frontend": {
+      "dependencies": [
+        "onchain_oracle_backend"
+      ],
+      "source": [
+        "src/onchain_oracle_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "onchain_oracle_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/onchain_oracle_backend"
+]
+resolver = "2"
