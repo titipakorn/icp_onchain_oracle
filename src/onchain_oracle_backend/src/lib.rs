@@ -4,7 +4,7 @@ use ic_cdk::api::management_canister::http_request::{
     http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
     TransformContext,
 };
-use ic_cdk::{query, update};
+use ic_cdk::query;
 use std::cell::RefCell;
 // use ic_cdk_macros::{self, query, update};
 use serde::{Serialize, Deserialize};
@@ -57,7 +57,7 @@ fn init(timer_interval_secs: u64) {
         let start_time = get_current_unix_time();
         let end_time = start_time - timer_interval_secs_clone;
         ic_cdk::spawn(async move {
-            get_icp_usd_exchange(start_time, end_time).await;
+            get_icp_usd_exchange( end_time,start_time).await;
         });
     });
 }
@@ -67,15 +67,18 @@ fn post_upgrade(timer_interval_secs: u64) {
     let interval = std::time::Duration::from_secs(timer_interval_secs);
     ic_cdk::println!("Starting a periodic task with interval {interval:?}");
     ic_cdk_timers::set_timer_interval(interval, move || {
+        let timer_interval_secs_clone = timer_interval_secs;
+        let start_time = get_current_unix_time();
+        let end_time = start_time - timer_interval_secs_clone;
         ic_cdk::spawn(async move {
-            get_icp_usd_exchange(get_current_unix_time()-timer_interval_secs, get_current_unix_time()).await;
+            get_icp_usd_exchange( end_time,start_time).await;
         });
     });
 }
 
 //Update method using the HTTPS outcalls feature
 #[ic_cdk::update]
-async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) -> () {
+async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) {
     //2. SETUP ARGUMENTS FOR HTTP GET request
     // 2.1 Setup the URL and its query parameters
     // type Timestamp = u64;
@@ -85,9 +88,9 @@ async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) -> () {
     let url = format!(
         "https://{}/products/ICP-USD/candles?start={}&end={}&granularity={}",
         host,
-        start_timestamp.to_string(),
-        end_timestamp.to_string(),
-        seconds_of_time.to_string()
+        start_timestamp,
+        end_timestamp,
+        seconds_of_time
     );
 
     // 2.2 prepare headers for the system http_request call
@@ -134,12 +137,13 @@ async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) -> () {
         //See:https://docs.rs/ic-cdk/latest/ic_cdk/api/management_canister/http_request/struct.HttpResponse.html
         Ok((response,)) => {
 
+            // ic_cdk::api::print(format!("Body Response = {:?}", &response.body));
             // let str_body = String::from_utf8(response.body)
             //     .expect("Transformed response is not UTF-8 encoded.");
             let parsed: Value = serde_json::from_slice(&response.body)
             .expect("Failed to parse JSON response");
-
-
+        
+            // ic_cdk::api::print(format!("Body Json = {:?}", &parsed));
             // println!("Response body: {:?}", str_body);
             //Return the body as a string and end the method
             // let parsed: Vec<Vec<f64>> = serde_json::from_str(&str_body).unwrap();
@@ -151,7 +155,7 @@ async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) -> () {
                 if let Value::Array(values) = entry {
                     if values.len() == 6 {
                         let data_point = DataPoint {
-                            timestamp: values[0].as_u64().expect("Expected u64") as u64,
+                            timestamp: values[0].as_u64().expect("Expected u64"),
                             low: values[1].as_f64().expect("Expected f64"),
                             high: values[2].as_f64().expect("Expected f64"),
                             open: values[3].as_f64().expect("Expected f64"),
@@ -169,9 +173,9 @@ async fn get_icp_usd_exchange(start_timestamp: u64, end_timestamp: u64) -> () {
 
         }
         Err((r, m)) => {
-            let message =
+            let _message =
                 format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
-
+            ic_cdk::api::print(format!("Received an error from coinbase: err = {:?}", _message));
         }
     }
 }
@@ -213,7 +217,6 @@ fn transform(raw: TransformArgs) -> HttpResponse {
         status: raw.response.status.clone(),
         body: raw.response.body.clone(),
         headers,
-        ..Default::default()
     };
 
     if res.status == 200 {
