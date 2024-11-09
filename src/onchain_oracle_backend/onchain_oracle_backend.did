@@ -1,3 +1,13 @@
-service : {
-    "greet": (text) -> (text) query;
+type DataPoint = record {
+    timestamp: nat64;
+    low: float64;
+    high: float64;
+    open: float64;
+    close: float64;
+    volume: float64;
+};
+
+service : (nat64) -> {
+    "get_icp_usd_exchange": (nat64, nat64) -> ();
+    "get_price_list": () -> (vec DataPoint) query;
 }

@@ -1,0 +1,8 @@
+{
+  "onchain_oracle_backend": {
+    "ic": "5gpsm-qiaaa-aaaao-qjvsa-cai"
+  },
+  "onchain_oracle_frontend": {
+    "ic": "5bouy-5qaaa-aaaao-qjvsq-cai"
+  }
+}
